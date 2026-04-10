@@ -36,6 +36,9 @@ if jd_option == "Upload File":
 else:
     jd_text = st.text_area("Paste Job Description here")
 
+if jd_text:
+    st.subheader("📄 JD Preview")
+    st.write(jd_text[:500])
 # -----------------------------------
 # RESUME UPLOAD
 # -----------------------------------
