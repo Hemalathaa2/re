@@ -11,7 +11,8 @@ from nltk.corpus import stopwords
 stop_words = set(stopwords.words('english'))
 
 # Load model once
-model = SentenceTransformer('all-MiniLM-L6-v2')
+
+model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
 
 
 # -------------------------------
