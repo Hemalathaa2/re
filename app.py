@@ -3,7 +3,7 @@ from utils import (
     extract_text_from_pdf,
     extract_text_from_docx,
     preprocess,
-    compute_similarity
+    compute_detailed_score   # ✅ changed
 )
 
 st.set_page_config(page_title="Resume Shortlister", layout="wide")
@@ -34,11 +34,13 @@ if jd_option == "Upload File":
             jd_text = jd_file.read().decode("utf-8")
 
 else:
-    jd_text = st.text_area("Paste Job Description here")
+    jd_text = st.text_area("Paste Job Description here", height=200)
 
+# ✅ FULL JD PREVIEW (SCROLLABLE)
 if jd_text:
-    st.subheader("📄 JD Preview")
-    st.write(jd_text[:500])
+    st.subheader("📄 JD Preview (Full)")
+    st.text_area("Job Description", jd_text, height=300)
+
 # -----------------------------------
 # RESUME UPLOAD
 # -----------------------------------
@@ -50,7 +52,8 @@ resume_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-top_n = st.slider("Select number of top candidates", 1, 10, 3)
+# ✅ Increased range
+top_n = st.slider("Select number of top candidates", 1, 50, 5)
 
 # -----------------------------------
 # ANALYSIS
@@ -79,16 +82,20 @@ if st.button("🔍 Analyze Resumes"):
 
                 resume_text_clean = preprocess(resume_text)
 
-                score = compute_similarity(jd_text_clean, resume_text_clean)
+                # ✅ NEW DETAILED SCORING
+                details = compute_detailed_score(jd_text_clean, resume_text_clean)
 
-                results.append((resume.name, score))
+                results.append({
+                    "name": resume.name,
+                    **details
+                })
 
                 progress.progress((i + 1) / len(resume_files))
 
             # -----------------------------------
             # SORT RESULTS
             # -----------------------------------
-            results = sorted(results, key=lambda x: x[1], reverse=True)
+            results = sorted(results, key=lambda x: x["final_score"], reverse=True)
 
         # -----------------------------------
         # DISPLAY RESULTS
@@ -96,9 +103,20 @@ if st.button("🔍 Analyze Resumes"):
         st.success("✅ Analysis Complete!")
 
         st.subheader("🏆 Top Candidates")
-        for i, (name, score) in enumerate(results[:top_n]):
-            st.write(f"{i+1}. {name} → {round(score*100, 2)}%")
+
+        for i, r in enumerate(results[:top_n]):
+            st.markdown(f"### {i+1}. {r['name']}")
+
+            # ✅ Better explanation
+            st.write(f"⭐ Final Score: {round(r['final_score']*100, 2)}%")
+            st.write(f"🧠 Semantic Match: {round(r['semantic_score']*100, 2)}%")
+            st.write(f"🛠 Skill Match: {round(r['skill_score']*100, 2)}%")
+
+            st.write(f"✅ Matched Skills: {', '.join(r['matched_skills']) if r['matched_skills'] else 'None'}")
+            st.write(f"❌ Missing Skills: {', '.join(r['missing_skills']) if r['missing_skills'] else 'None'}")
+
+            st.divider()
 
         st.subheader("📊 All Results")
-        for name, score in results:
-            st.write(f"{name} → {round(score*100, 2)}%")
+        for r in results:
+            st.write(f"{r['name']} → {round(r['final_score']*100, 2)}%")
