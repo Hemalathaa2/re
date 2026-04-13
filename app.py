@@ -1,30 +1,23 @@
 import streamlit as st
-import requests
 import pandas as pd
-from utils import extract_text_from_pdf, extract_text_from_docx
+from utils import *
 
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 
 # -------------------------------
-# CONFIG
-# -------------------------------
-MAX_FILE_SIZE_MB = 100
-
-# -------------------------------
-# PREMIUM UI CSS
+# UI STYLE
 # -------------------------------
 st.markdown("""
 <style>
 body { background-color: #0f172a; }
 
 .main-title {
-    font-size: 60px;
-    font-weight: 800;
+    font-size: 65px;
+    font-weight: 900;
     text-align: center;
     background: linear-gradient(90deg, #4ade80, #22d3ee);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 10px;
 }
 
 .subtitle {
@@ -37,11 +30,9 @@ body { background-color: #0f172a; }
     background: rgba(255,255,255,0.05);
     padding: 20px;
     border-radius: 15px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
     margin-bottom: 15px;
 }
-
-.metric { font-size: 22px; font-weight: bold; }
 .good { color: #4ade80; }
 .bad { color: #f87171; }
 </style>
@@ -51,23 +42,19 @@ body { background-color: #0f172a; }
 # HEADER
 # -------------------------------
 st.markdown('<p class="main-title">🚀 AI Hiring Dashboard</p>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">Smart AI Resume Screening & Candidate Ranking System</p>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">FAANG-Level Resume Screening System</p>', unsafe_allow_html=True)
 
 # -------------------------------
-# JOB DESCRIPTION INPUT
+# JD INPUT
 # -------------------------------
 st.subheader("📌 Job Description")
 
-jd_option = st.radio(
-    "Choose input method:",
-    ["Paste Text", "Upload File"]
-)
+jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
 
 jd_text = ""
 
 if jd_option == "Paste Text":
-    jd_text = st.text_area("Paste Job Description", height=200)
-
+    jd_text = st.text_area("Paste JD", height=200)
 else:
     jd_file = st.file_uploader("Upload JD", type=["pdf", "docx", "txt"])
 
@@ -79,40 +66,19 @@ else:
         else:
             jd_text = jd_file.read().decode("utf-8")
 
-# Preview
-if jd_text:
-    st.text_area("📄 JD Preview", jd_text, height=200)
-
 # -------------------------------
 # RESUME UPLOAD
 # -------------------------------
 st.subheader("📂 Upload Resumes")
 
 resume_files = st.file_uploader(
-    "Upload Candidate Resumes",
+    "Upload resumes",
     type=["pdf", "docx"],
     accept_multiple_files=True
 )
 
 # -------------------------------
-# FILE SIZE FILTER
-# -------------------------------
-valid_files = []
-if resume_files:
-    for f in resume_files:
-        size_mb = f.size / (1024 * 1024)
-        if size_mb > MAX_FILE_SIZE_MB:
-            st.warning(f"⚠️ {f.name} exceeds 100MB and was skipped.")
-        else:
-            valid_files.append(f)
-
-resume_files = valid_files
-
-if resume_files:
-    st.success(f"✅ {len(resume_files)} resumes uploaded")
-
-# -------------------------------
-# JOB OPENINGS INPUT (SMART 🔥)
+# JOB OPENINGS
 # -------------------------------
 job_openings = st.number_input(
     "👥 Enter number of job openings",
@@ -121,42 +87,73 @@ job_openings = st.number_input(
     value=5
 )
 
-# Auto shortlist
-top_n = job_openings
-
 # -------------------------------
-# ANALYZE
+# ANALYSIS
 # -------------------------------
 if st.button("⚡ Analyze Candidates"):
 
     if not jd_text or not resume_files:
-        st.warning("Please provide Job Description and Resumes")
+        st.warning("Provide JD and resumes")
         st.stop()
 
-    with st.spinner("🤖 AI analyzing resumes..."):
+    with st.spinner("🤖 Processing resumes..."):
 
-        files = [("files", (f.name, f, f.type)) for f in resume_files]
+        jd_clean = preprocess(jd_text)
 
-        response = requests.post(
-            "http://localhost:8000/analyze/",
-            files=files,
-            data={"jd_text": jd_text}
-        )
+        texts, names = [], []
 
-        results = response.json()["results"]
+        for f in resume_files:
+            try:
+                if f.name.endswith(".pdf"):
+                    text = extract_text_from_pdf(f)
+                else:
+                    text = extract_text_from_docx(f)
 
-    st.success("✅ Analysis Completed!")
+                clean = preprocess(text)
+
+                if len(clean) > 50:
+                    texts.append(clean)
+                    names.append(f.name)
+
+            except:
+                st.warning(f"⚠️ Error reading {f.name}")
+
+        # embeddings
+        jd_emb = get_embeddings_batch([jd_clean])[0]
+        res_embs = get_embeddings_batch(texts)
+
+        results = []
+
+        for i in range(len(texts)):
+            score = compute_detailed_score(
+                jd_clean, texts[i], jd_emb, res_embs[i]
+            )
+
+            results.append({
+                "name": names[i],
+                **score
+            })
+
+        results.sort(key=lambda x: x["final_score"], reverse=True)
+
+        # LLM explanation
+        if results:
+            results[0]["llm_explanation"] = generate_explanation(
+                jd_text, texts[0], results[0]
+            )
+
+    st.success("✅ Analysis Complete")
 
     # -------------------------------
     # METRICS
     # -------------------------------
-    top_score = round(results[0]["final_score"] * 100, 2)
-    avg_score = round(sum(r["final_score"] for r in results)/len(results) * 100, 2)
+    top_score = round(results[0]["final_score"]*100,2)
+    avg_score = round(sum(r["final_score"] for r in results)/len(results)*100,2)
 
-    c1, c2, c3 = st.columns(3)
+    c1,c2,c3 = st.columns(3)
     c1.metric("🏆 Top Score", f"{top_score}%")
     c2.metric("📊 Avg Score", f"{avg_score}%")
-    c3.metric("📁 Total Candidates", len(results))
+    c3.metric("📁 Candidates", len(results))
 
     # -------------------------------
     # TOP CANDIDATE
@@ -164,66 +161,45 @@ if st.button("⚡ Analyze Candidates"):
     top = results[0]
 
     st.subheader("🥇 Best Candidate")
-
     st.markdown(f"""
     <div class="card">
         <h2>{top['name']}</h2>
-        <p class="metric">{round(top['final_score']*100,2)}%</p>
+        <h3>{round(top['final_score']*100,2)}%</h3>
     </div>
     """, unsafe_allow_html=True)
 
     st.progress(top["final_score"])
 
     if "llm_explanation" in top:
-        st.subheader("🧠 AI Insight")
         st.info(top["llm_explanation"])
 
     # -------------------------------
-    # TABS
+    # SHORTLIST
     # -------------------------------
-    tab1, tab2 = st.tabs(["📊 Rankings", "📈 Insights"])
+    st.subheader("🎯 Shortlisted Candidates")
 
-    with tab1:
-        for i, r in enumerate(results[:top_n]):
+    for i, r in enumerate(results[:job_openings]):
 
-            st.markdown(f"""
-            <div class="card">
-                <h4>#{i+1} {r['name']}</h4>
-                <p class="metric">{round(r['final_score']*100,2)}%</p>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="card">
+            <h4>#{i+1} {r['name']}</h4>
+            <p>{round(r['final_score']*100,2)}%</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-            st.progress(r["final_score"])
+        st.progress(r["final_score"])
 
-            c1, c2 = st.columns(2)
-            c1.write(f"🧠 Semantic: {round(r['semantic_score']*100,2)}%")
-            c2.write(f"🛠 Skills: {round(r['skill_score']*100,2)}%")
+        st.write("✅", r["matched_skills"])
+        st.write("❌", r["missing_skills"])
 
-            st.markdown("**✅ Matched Skills**")
-            st.markdown(
-                " ".join([f"<span class='good'>✔ {s}</span>" for s in r["matched_skills"]]),
-                unsafe_allow_html=True
-            )
+        st.divider()
 
-            st.markdown("**❌ Missing Skills**")
-            st.markdown(
-                " ".join([f"<span class='bad'>✖ {s}</span>" for s in r["missing_skills"]]),
-                unsafe_allow_html=True
-            )
+    # -------------------------------
+    # INSIGHTS
+    # -------------------------------
+    df = pd.DataFrame(results)
 
-            st.divider()
+    st.subheader("📊 Insights")
+    st.bar_chart(df.set_index("name")["final_score"])
 
-    with tab2:
-        df = pd.DataFrame(results)
-
-        st.subheader("📊 Score Distribution")
-        st.bar_chart(df.set_index("name")["final_score"])
-
-        st.subheader("📈 Comparison")
-        st.line_chart(df.set_index("name")[["semantic_score", "skill_score"]])
-
-        st.download_button(
-            "⬇ Download Results",
-            df.to_csv(index=False),
-            "results.csv"
-        )
+    st.download_button("⬇ Download CSV", df.to_csv(), "results.csv")
