@@ -68,16 +68,27 @@ def compute_detailed_score(jd_text, resume_text, jd_emb, res_emb):
     final = 0.5*semantic + 0.3*skill_score + 0.2*exp_score
 
     return {
-        "final_score": final,
-        "semantic_score": semantic,
-        "skill_score": skill_score,
-        "matched_skills": list(match),
-        "missing_skills": list(jd_sk - res_sk)
-    }
+    "final_score": final,
+    "semantic_score": semantic,
+    "skill_score": skill_score,
+    "experience_score": exp_score,  
+    "matched_skills": list(match),
+    "missing_skills": list(jd_sk - res_sk)
+}
 
 def generate_explanation(jd, res, score):
     try:
-        prompt = f"Explain briefly why this candidate is best match.\nScore:{score['final_score']}"
+        prompt = f"""
+Job Description:
+{jd[:500]}
+
+Candidate Resume:
+{res[:500]}
+
+Score: {score['final_score']}
+
+Explain in 3-4 lines why this candidate matches or not.
+"""
         r = client.chat.completions.create(
             model="llama3-8b-8192",
             messages=[{"role":"user","content":prompt}]
