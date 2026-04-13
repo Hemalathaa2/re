@@ -12,7 +12,7 @@ st.markdown("""
 body { background-color: #0f172a; }
 
 .main-title {
-    font-size: 65px;
+    font-size: 100px;
     font-weight: 900;
     text-align: center;
     background: linear-gradient(90deg, #4ade80, #22d3ee);
@@ -42,7 +42,7 @@ body { background-color: #0f172a; }
 # HEADER
 # -------------------------------
 st.markdown('<p class="main-title">🚀 AI Hiring Dashboard</p>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">FAANG-Level Resume Screening System</p>', unsafe_allow_html=True)
+#st.markdown('<p class="subtitle">FAANG-Level Resume Screening System</p>', unsafe_allow_html=True)
 
 # -------------------------------
 # JD INPUT
