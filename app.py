@@ -127,7 +127,7 @@ jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
 jd_text = ""
 
 if jd_option == "Paste Text":
-    jd_text = st.text_area("Paste JD", height=200)
+    jd_text = st.text_area("Paste JD", height=100)
 else:
     jd_file = st.file_uploader("Upload Job Description", type=["pdf","docx","txt"])
 
