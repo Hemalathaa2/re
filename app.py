@@ -168,7 +168,10 @@ if st.button("⚡ Analyze Candidates"):
     </div>
     """, unsafe_allow_html=True)
 
-    st.progress(top["final_score"])
+    # ✅ FIXED PROGRESS
+    top_score_val = float(top["final_score"])
+    top_score_val = max(0.0, min(top_score_val, 1.0))
+    st.progress(top_score_val)
 
     if "llm_explanation" in top:
         st.info(top["llm_explanation"])
@@ -187,7 +190,10 @@ if st.button("⚡ Analyze Candidates"):
         </div>
         """, unsafe_allow_html=True)
 
-        st.progress(r["final_score"])
+        # ✅ FIXED PROGRESS
+        score_val = float(r["final_score"])
+        score_val = max(0.0, min(score_val, 1.0))
+        st.progress(score_val)
 
         st.write("✅", r["matched_skills"])
         st.write("❌", r["missing_skills"])
