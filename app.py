@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+from utils import extract_text_from_pdf, extract_text_from_docx
 
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 
@@ -10,18 +11,28 @@ st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 MAX_FILE_SIZE_MB = 100
 
 # -------------------------------
-# UI STYLE
+# PREMIUM UI CSS
 # -------------------------------
 st.markdown("""
 <style>
 body { background-color: #0f172a; }
+
 .main-title {
-    font-size: 42px;
-    font-weight: bold;
+    font-size: 60px;
+    font-weight: 800;
+    text-align: center;
     background: linear-gradient(90deg, #4ade80, #22d3ee);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
 }
+
+.subtitle {
+    text-align: center;
+    color: #94a3b8;
+    margin-bottom: 30px;
+}
+
 .card {
     background: rgba(255,255,255,0.05);
     padding: 20px;
@@ -29,6 +40,7 @@ body { background-color: #0f172a; }
     backdrop-filter: blur(10px);
     margin-bottom: 15px;
 }
+
 .metric { font-size: 22px; font-weight: bold; }
 .good { color: #4ade80; }
 .bad { color: #f87171; }
@@ -39,22 +51,48 @@ body { background-color: #0f172a; }
 # HEADER
 # -------------------------------
 st.markdown('<p class="main-title">🚀 AI Hiring Dashboard</p>', unsafe_allow_html=True)
-st.caption("AI-powered resume screening with explainable insights")
+st.markdown('<p class="subtitle">Smart AI Resume Screening & Candidate Ranking System</p>', unsafe_allow_html=True)
 
 # -------------------------------
-# INPUT
+# JOB DESCRIPTION INPUT
 # -------------------------------
-col1, col2 = st.columns(2)
+st.subheader("📌 Job Description")
 
-with col1:
-    jd_text = st.text_area("📌 Job Description", height=200)
+jd_option = st.radio(
+    "Choose input method:",
+    ["Paste Text", "Upload File"]
+)
 
-with col2:
-    resume_files = st.file_uploader(
-        "📂 Upload Resumes",
-        type=["pdf", "docx"],
-        accept_multiple_files=True
-    )
+jd_text = ""
+
+if jd_option == "Paste Text":
+    jd_text = st.text_area("Paste Job Description", height=200)
+
+else:
+    jd_file = st.file_uploader("Upload JD", type=["pdf", "docx", "txt"])
+
+    if jd_file:
+        if jd_file.name.endswith(".pdf"):
+            jd_text = extract_text_from_pdf(jd_file)
+        elif jd_file.name.endswith(".docx"):
+            jd_text = extract_text_from_docx(jd_file)
+        else:
+            jd_text = jd_file.read().decode("utf-8")
+
+# Preview
+if jd_text:
+    st.text_area("📄 JD Preview", jd_text, height=200)
+
+# -------------------------------
+# RESUME UPLOAD
+# -------------------------------
+st.subheader("📂 Upload Resumes")
+
+resume_files = st.file_uploader(
+    "Upload Candidate Resumes",
+    type=["pdf", "docx"],
+    accept_multiple_files=True
+)
 
 # -------------------------------
 # FILE SIZE FILTER
@@ -74,15 +112,17 @@ if resume_files:
     st.success(f"✅ {len(resume_files)} resumes uploaded")
 
 # -------------------------------
-# SHORTLIST INPUT (MAX 50)
+# JOB OPENINGS INPUT (SMART 🔥)
 # -------------------------------
-top_n = st.number_input(
-    "🎯 Enter number of candidates to shortlist (Max 50)",
+job_openings = st.number_input(
+    "👥 Enter number of job openings",
     min_value=1,
     max_value=50,
-    value=5,
-    step=1
+    value=5
 )
+
+# Auto shortlist
+top_n = job_openings
 
 # -------------------------------
 # ANALYZE
@@ -90,7 +130,7 @@ top_n = st.number_input(
 if st.button("⚡ Analyze Candidates"):
 
     if not jd_text or not resume_files:
-        st.warning("Provide JD and resumes")
+        st.warning("Please provide Job Description and Resumes")
         st.stop()
 
     with st.spinner("🤖 AI analyzing resumes..."):
@@ -116,7 +156,7 @@ if st.button("⚡ Analyze Candidates"):
     c1, c2, c3 = st.columns(3)
     c1.metric("🏆 Top Score", f"{top_score}%")
     c2.metric("📊 Avg Score", f"{avg_score}%")
-    c3.metric("📁 Candidates", len(results))
+    c3.metric("📁 Total Candidates", len(results))
 
     # -------------------------------
     # TOP CANDIDATE
@@ -124,6 +164,7 @@ if st.button("⚡ Analyze Candidates"):
     top = results[0]
 
     st.subheader("🥇 Best Candidate")
+
     st.markdown(f"""
     <div class="card">
         <h2>{top['name']}</h2>
