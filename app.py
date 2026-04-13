@@ -168,6 +168,10 @@ if st.button("⚡ Analyze Candidates"):
     </div>
     """, unsafe_allow_html=True)
 
+
+    st.caption(f"{round(score_val*100,2)}% match")
+
+    
     # ✅ FIXED PROGRESS
     top_score_val = float(top["final_score"])
     top_score_val = max(0.0, min(top_score_val, 1.0))
