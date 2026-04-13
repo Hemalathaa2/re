@@ -33,8 +33,16 @@ body { background-color: #0f172a; }
     backdrop-filter: blur(12px);
     margin-bottom: 15px;
 }
+
 .good { color: #4ade80; }
 .bad { color: #f87171; }
+
+/* ✅ Bigger input box */
+div[data-baseweb="input"] input {
+    font-size:20px !important;
+    padding:12px !important;
+    border-radius:10px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -46,12 +54,11 @@ st.markdown("""
 🚀 AI Hiring Dashboard
 </h1>
 """, unsafe_allow_html=True)
-#st.markdown('<p class="subtitle">FAANG-Level Resume Screening System</p>', unsafe_allow_html=True)
 
 # -------------------------------
 # JD INPUT
 # -------------------------------
-st.subheader("📌 Job Description")
+st.markdown("### 📌 Job Description (Max: 100MB)")
 
 jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
 
@@ -60,7 +67,10 @@ jd_text = ""
 if jd_option == "Paste Text":
     jd_text = st.text_area("Paste JD", height=200)
 else:
-    jd_file = st.file_uploader("Upload JD", type=["pdf", "docx", "txt"])
+    jd_file = st.file_uploader(
+        "Upload Job Description",
+        type=["pdf", "docx", "txt"]
+    )
 
     if jd_file:
         if jd_file.name.endswith(".pdf"):
@@ -73,7 +83,7 @@ else:
 # -------------------------------
 # RESUME UPLOAD
 # -------------------------------
-st.subheader("📂 Upload Resumes")
+st.markdown("### 📂 Upload Resumes (Max: 100MB per file)")
 
 resume_files = st.file_uploader(
     "Upload resumes",
@@ -84,8 +94,10 @@ resume_files = st.file_uploader(
 # -------------------------------
 # JOB OPENINGS
 # -------------------------------
+st.markdown("### 👥 Enter Number of Job Openings")
+
 job_openings = st.number_input(
-    "👥 Enter number of job openings",
+    "Number of openings",
     min_value=1,
     max_value=50,
     value=5
@@ -172,7 +184,6 @@ if st.button("Analyze Candidates"):
     </div>
     """, unsafe_allow_html=True)
     
-    # ✅ FIXED PROGRESS
     top_score_val = float(top["final_score"])
     top_score_val = max(0.0, min(top_score_val, 1.0))
     st.progress(top_score_val)
@@ -194,7 +205,6 @@ if st.button("Analyze Candidates"):
         </div>
         """, unsafe_allow_html=True)
 
-        # ✅ FIXED PROGRESS
         score_val = float(r["final_score"])
         score_val = max(0.0, min(score_val, 1.0))
         st.progress(score_val)
