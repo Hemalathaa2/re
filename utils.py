@@ -2,11 +2,13 @@ import pdfplumber
 import docx
 import re
 import nltk
+import os
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from groq import Groq
 
 # -------------------------------
-# NLTK SETUP
+# NLTK
 # -------------------------------
 try:
     nltk.data.find('corpora/stopwords')
@@ -17,9 +19,14 @@ from nltk.corpus import stopwords
 stop_words = set(stopwords.words('english'))
 
 # -------------------------------
-# LOAD MODEL
+# MODEL
 # -------------------------------
 model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# -------------------------------
+# GROQ
+# -------------------------------
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # -------------------------------
 # TEXT EXTRACTION
@@ -46,7 +53,7 @@ def preprocess(text):
     return " ".join(words)
 
 # -------------------------------
-# SKILL DATABASE
+# SKILLS
 # -------------------------------
 SKILL_CATEGORIES = {
     "programming": ["python", "java", "c++", "javascript"],
@@ -62,9 +69,6 @@ def extract_skills(text):
             if skill in text:
                 found.add(skill)
     return found
-
-def get_all_skills(text):
-    return extract_skills(text)
 
 # -------------------------------
 # EXPERIENCE
@@ -86,8 +90,8 @@ def compute_detailed_score(jd_text, resume_text, jd_emb, res_emb):
 
     semantic_score = cosine_similarity([jd_emb], [res_emb])[0][0]
 
-    jd_skills = get_all_skills(jd_text)
-    res_skills = get_all_skills(resume_text)
+    jd_skills = extract_skills(jd_text)
+    res_skills = extract_skills(resume_text)
 
     matched = jd_skills & res_skills
     missing = jd_skills - res_skills
@@ -107,3 +111,34 @@ def compute_detailed_score(jd_text, resume_text, jd_emb, res_emb):
         "matched_skills": list(matched),
         "missing_skills": list(missing)
     }
+
+# -------------------------------
+# LLM EXPLANATION
+# -------------------------------
+def generate_explanation(jd_text, resume_text, result):
+    try:
+        prompt = f"""
+You are a recruiter.
+
+Job Description:
+{jd_text[:800]}
+
+Candidate Resume:
+{resume_text[:800]}
+
+Matched Skills: {result['matched_skills']}
+Missing Skills: {result['missing_skills']}
+Score: {round(result['final_score']*100,2)}%
+
+Explain why this candidate is ranked #1 in 3 lines.
+"""
+
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        return response.choices[0].message.content
+
+    except:
+        return "LLM explanation unavailable"
