@@ -58,7 +58,7 @@ st.markdown("""
 # -------------------------------
 # JD INPUT
 # -------------------------------
-st.markdown("### 📌 Job Description (Max: 100MB)")
+st.markdown("### 📌 Job Description ")
 
 jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
 
@@ -83,7 +83,7 @@ else:
 # -------------------------------
 # RESUME UPLOAD
 # -------------------------------
-st.markdown("### 📂 Upload Resumes (Max: 100MB per file)")
+st.markdown("### 📂 Upload Resumes ")
 
 resume_files = st.file_uploader(
     "Upload resumes",
