@@ -11,106 +11,122 @@ st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 st.markdown("""
 <style>
 
-/* Background */
+/* ---------------- GLOBAL ---------------- */
 body {
     background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
+    font-size: 13px;
 }
 
-/* Main container spacing */
+/* Main spacing */
 .block-container {
     padding-top: 2rem;
 }
 
-/* Header */
+/* ---------------- HEADER ---------------- */
 .main-title {
-    font-size: 48px;
-    font-weight: 900;
+    font-size: 36px;
+    font-weight: 800;
     text-align: center;
     background: linear-gradient(90deg, #4ade80, #22d3ee, #818cf8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
-/* Subtitle */
 .subtitle {
     text-align: center;
     color: #94a3b8;
-    font-size: 18px;
-    margin-bottom: 30px;
+    font-size: 14px;
+    margin-bottom: 20px;
 }
 
-/* Glass Card */
+/* ---------------- TEXT ---------------- */
+h1, h2, h3, h4 {
+    font-size: 15px !important;
+}
+
+p, div, span {
+    font-size: 13px !important;
+}
+
+/* ---------------- CARD (GLASS UI) ---------------- */
 .card {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    padding: 20px;
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    margin-bottom: 10px;
+    transition: all 0.25s ease;
 }
 
-/* Hover animation */
 .card:hover {
-    transform: translateY(-5px) scale(1.01);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.35);
 }
 
-/* Buttons */
+/* ---------------- BUTTONS ---------------- */
 .stButton > button {
     background: linear-gradient(90deg, #22d3ee, #4ade80);
     color: black;
-    font-weight: bold;
-    border-radius: 12px;
-    padding: 10px 20px;
-    transition: 0.3s;
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 10px;
+    padding: 8px 16px;
     border: none;
+    transition: 0.25s ease;
 }
 
 .stButton > button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(34,211,238,0.6);
+    transform: scale(1.04);
+    box-shadow: 0 0 10px rgba(34,211,238,0.5);
 }
 
-/* Input fields */
+/* ---------------- INPUT FIELDS ---------------- */
 div[data-baseweb="input"] input {
-    font-size:18px !important;
-    padding:12px !important;
-    border-radius:12px !important;
+    font-size: 13px !important;
+    padding: 8px !important;
+    border-radius: 10px !important;
     background: rgba(255,255,255,0.05) !important;
-    color: white !important;
+    color: inherit !important;   /* ✅ theme adaptive */
 }
 
-/* File uploader */
-section[data-testid="stFileUploader"] {
-    background: rgba(255,255,255,0.05);
-    padding: 15px;
-    border-radius: 15px;
-    border: 1px dashed rgba(255,255,255,0.2);
+/* Placeholder */
+div[data-baseweb="input"] input::placeholder {
+    color: gray !important;
 }
 
-/* Progress bar */
-div[data-testid="stProgress"] > div > div {
-    background: linear-gradient(90deg, #22d3ee, #4ade80);
-}
-
-div[data-baseweb="input"] input {
-    font-size:16px !important;
-    padding:10px !important;
-    border-radius:10px !important;
+/* ---------------- TEXT AREA ---------------- */
+textarea {
+    font-size: 13px !important;
+    border-radius: 10px !important;
     background: rgba(255,255,255,0.05) !important;
     color: inherit !important;
 }
 
-/* Placeholder color */
-div[data-baseweb="input"] input::placeholder {
-    color: gray !important;
-}
+/* ---------------- FILE UPLOADER ---------------- */
+section[data-testid="stFileUploader"] {
+    background: rgba(255,255,255,0.05);
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px dashed rgba(255,255,255,0.2);
 }
 
-/* Divider */
+/* ---------------- METRICS ---------------- */
+[data-testid="metric-container"] {
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 10px;
+}
+
+/* ---------------- PROGRESS BAR ---------------- */
+div[data-testid="stProgress"] > div > div {
+    background: linear-gradient(90deg, #22d3ee, #4ade80);
+}
+
+/* ---------------- DIVIDER ---------------- */
 hr {
     border: 1px solid rgba(255,255,255,0.1);
 }
@@ -209,8 +225,13 @@ if st.button("Analyze Candidates"):
 
         results.sort(key=lambda x: x["final_score"], reverse=True)
 
-        if results:
-            results[0]["llm_explanation"] = generate_explanation(jd_text, texts[0], results[0])
+        # Generate explanation for each candidate
+        for i in range(len(results)):
+            results[i]["llm_explanation"] = generate_explanation(
+                jd_text,
+                texts[i],
+                results[i]
+            ))
 
     st.success("Analysis Complete")
 
@@ -248,29 +269,68 @@ if st.button("Analyze Candidates"):
     # -------------------------------
     # SHORTLIST
     # -------------------------------
-    st.subheader("Shortlisted Candidates")
-
     for i, r in enumerate(results[:job_openings]):
 
-        st.markdown(f"""
-        <div class="card">
-        #{i+1} {r['name']} — {round(r['final_score']*100,2)}%
-        </div>
-        """, unsafe_allow_html=True)
+    # Verdict
+    if r["final_score"] > 0.7:
+        verdict = "🟢 Strong Match (Highly Recommended)"
+    elif r["final_score"] > 0.4:
+        verdict = "🟡 Moderate Match (Can be Considered)"
+    else:
+        verdict = "🔴 Low Match (Not Recommended)"
 
-        st.progress(float(r["final_score"]))
+    # Card
+    st.markdown(f"""
+    <div class="card">
+    <b>#{i+1} {r['name']}</b><br>
+    Score: {r['final_score']*100:.2f}%
+    </div>
+    """, unsafe_allow_html=True)
 
-        # ✅ FIXED SKILLS DISPLAY
-        st.write("✅ Matched:", ", ".join(r["matched_skills"]) if r["matched_skills"] else "None")
-        st.write("❌ Missing:", ", ".join(r["missing_skills"]) if r["missing_skills"] else "None")
+    st.progress(float(r["final_score"]))
 
-        # ✅ SCORE BREAKDOWN
-        st.write(f"📊 Semantic: {round(r['semantic_score']*100,2)}%")
-        st.write(f"🧠 Skill: {round(r['skill_score']*100,2)}%")
-        st.write(f"📄 Experience: {round(r['experience_score']*100,2)}%")
+    # Skills
+    matched = r["matched_skills"]
+    missing = r["missing_skills"]
 
-        st.divider()
+    st.markdown(f"""
+    **🔍 Skills Analysis**
 
+    - ✅ Matched Skills: {', '.join(matched) if matched else 'None found'}
+    - ❌ Missing Skills: {', '.join(missing) if missing else 'None'}
+    """)
+
+    # Keyword comparison
+    jd_keywords = list(extract_skills(jd_clean))
+    resume_keywords = list(extract_skills(texts[i]))
+
+    st.markdown(f"""
+    **🧾 Keyword Comparison**
+
+    - 📌 JD Keywords: {', '.join(jd_keywords) if jd_keywords else 'None'}
+    - 📄 Resume Keywords: {', '.join(resume_keywords) if resume_keywords else 'None'}
+    """)
+
+    # Scores
+    st.markdown(f"""
+    **📊 Score Breakdown**
+
+    - 📄 Resume Similarity: {r['semantic_score']*100:.2f}%
+    - 🧠 Skill Match: {r['skill_score']*100:.2f}%
+    - 📅 Experience Match: {r['experience_score']*100:.2f}%
+    """)
+
+    # Verdict
+    st.markdown(f"**📌 Verdict:** {verdict}")
+
+    # AI Explanation
+    with st.expander("🧠 AI Explanation"):
+        if r["llm_explanation"]:
+            st.write(r["llm_explanation"])
+        else:
+            st.write("No explanation available")
+
+    st.divider()
     # -------------------------------
     # COMPARISON TABLE
     # -------------------------------
