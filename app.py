@@ -41,7 +41,11 @@ body { background-color: #0f172a; }
 # -------------------------------
 # HEADER
 # -------------------------------
-st.markdown('<p class="main-title">🚀 AI Hiring Dashboard</p>', unsafe_allow_html=True)
+st.markdown("""
+<h1 style='font-size:40px; font-weight:800; text-align:center; color:#2E86C1;'>
+🚀 AI Hiring Dashboard
+</h1>
+""", unsafe_allow_html=True)
 #st.markdown('<p class="subtitle">FAANG-Level Resume Screening System</p>', unsafe_allow_html=True)
 
 # -------------------------------
@@ -90,7 +94,7 @@ job_openings = st.number_input(
 # -------------------------------
 # ANALYSIS
 # -------------------------------
-if st.button("⚡ Analyze Candidates"):
+if st.button("Analyze Candidates"):
 
     if not jd_text or not resume_files:
         st.warning("Provide JD and resumes")
