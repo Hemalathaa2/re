@@ -10,113 +10,64 @@ st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 st.markdown("""
 <style>
 
-/* Background */
+/* Global */
 body {
     background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
-}
-
-/* Main container spacing */
-.block-container {
-    padding-top: 2rem;
+    font-size: 14px;
 }
 
 /* Header */
 .main-title {
-    font-size: 48px;
-    font-weight: 900;
+    font-size: 32px;
+    font-weight: 700;
     text-align: center;
-    background: linear-gradient(90deg, #4ade80, #22d3ee, #818cf8);
+    background: linear-gradient(90deg, #4ade80, #22d3ee);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 20px;
+}
+
+/* Card */
+.card {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.08);
     margin-bottom: 10px;
 }
 
-/* Subtitle */
-.subtitle {
-    text-align: center;
-    color: #94a3b8;
-    font-size: 18px;
-    margin-bottom: 30px;
-}
+/* Smaller headings */
+h2 { font-size: 18px !important; }
+h3 { font-size: 16px !important; }
+h4 { font-size: 14px !important; }
 
-/* Glass Card */
-.card {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    padding: 20px;
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
-}
-
-/* Hover animation */
-.card:hover {
-    transform: translateY(-5px) scale(1.01);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+/* Inputs */
+div[data-baseweb="input"] input {
+    font-size:14px !important;
+    padding:8px !important;
 }
 
 /* Buttons */
 .stButton > button {
-    background: linear-gradient(90deg, #22d3ee, #4ade80);
-    color: black;
-    font-weight: bold;
-    border-radius: 12px;
-    padding: 10px 20px;
-    transition: 0.3s;
-    border: none;
-}
-
-.stButton > button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(34,211,238,0.6);
-}
-
-/* Input fields */
-div[data-baseweb="input"] input {
-    font-size:18px !important;
-    padding:12px !important;
-    border-radius:12px !important;
-    background: rgba(255,255,255,0.05) !important;
-    color: white !important;
-}
-
-/* File uploader */
-section[data-testid="stFileUploader"] {
-    background: rgba(255,255,255,0.05);
-    padding: 15px;
-    border-radius: 15px;
-    border: 1px dashed rgba(255,255,255,0.2);
-}
-
-/* Progress bar */
-div[data-testid="stProgress"] > div > div {
-    background: linear-gradient(90deg, #22d3ee, #4ade80);
+    font-size:14px;
+    padding:8px 16px;
 }
 
 /* Metrics */
 [data-testid="metric-container"] {
-    background: rgba(255,255,255,0.05);
-    border-radius: 15px;
-    padding: 15px;
-}
-
-/* Divider */
-hr {
-    border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px;
+    border-radius: 10px;
 }
 
 </style>
-""", unsafe_allow_html=True)
-
-# -------------------------------
-# HEADER
-# -------------------------------
-st.markdown("""
-<h1 style='font-size:40px; font-weight:800; text-align:center; color:#2E86C1;'>
-🚀 AI Hiring Dashboard
-</h1>
 """, unsafe_allow_html=True)
 
 # -------------------------------
