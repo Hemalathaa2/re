@@ -96,11 +96,18 @@ div[data-testid="stProgress"] > div > div {
     background: linear-gradient(90deg, #22d3ee, #4ade80);
 }
 
-/* Metrics */
-[data-testid="metric-container"] {
-    background: rgba(255,255,255,0.05);
-    border-radius: 15px;
-    padding: 15px;
+div[data-baseweb="input"] input {
+    font-size:16px !important;
+    padding:10px !important;
+    border-radius:10px !important;
+    background: rgba(255,255,255,0.05) !important;
+    color: inherit !important;
+}
+
+/* Placeholder color */
+div[data-baseweb="input"] input::placeholder {
+    color: gray !important;
+}
 }
 
 /* Divider */
@@ -127,7 +134,11 @@ jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
 jd_text = ""
 
 if jd_option == "Paste Text":
-    jd_text = st.text_area("Paste JD", height=100)
+    jd_text = st.text_area(
+    "Paste Job Description",
+    height=120,
+    placeholder="Paste the job description here..."
+)
 else:
     jd_file = st.file_uploader("Upload Job Description", type=["pdf","docx","txt"])
 
