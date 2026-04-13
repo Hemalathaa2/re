@@ -114,7 +114,9 @@ hr {
 # -------------------------------
 # HEADER
 # -------------------------------
-st.markdown("##  AI Hiring Dashboard")
+st.markdown("""
+<h1 class="main-title">🚀 AI Hiring Dashboard</h1>
+""", unsafe_allow_html=True)
 
 # -------------------------------
 # JD INPUT
