@@ -79,7 +79,7 @@ div[data-baseweb="input"] input {
     padding:12px !important;
     border-radius:12px !important;
     background: rgba(255,255,255,0.05) !important;
-    color: white !important;
+    color: inherit !important;
 }
 
 /* File uploader */
