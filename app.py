@@ -3,7 +3,8 @@ from utils import (
     extract_text_from_pdf,
     extract_text_from_docx,
     preprocess,
-    compute_detailed_score   # ✅ changed
+    compute_detailed_score,
+    get_embeddings_batch   # ✅ NEW
 )
 
 st.set_page_config(page_title="Resume Shortlister", layout="wide")
@@ -32,11 +33,10 @@ if jd_option == "Upload File":
             jd_text = extract_text_from_docx(jd_file)
         else:
             jd_text = jd_file.read().decode("utf-8")
-
 else:
     jd_text = st.text_area("Paste Job Description here", height=200)
 
-# ✅ FULL JD PREVIEW (SCROLLABLE)
+# JD Preview
 if jd_text:
     st.subheader("📄 JD Preview (Full)")
     st.text_area("Job Description", jd_text, height=300)
@@ -52,7 +52,6 @@ resume_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-# ✅ Increased range
 top_n = st.slider("Select number of top candidates", 1, 50, 5)
 
 # -----------------------------------
@@ -62,39 +61,68 @@ if st.button("🔍 Analyze Resumes"):
 
     if not jd_text.strip():
         st.warning("Please provide Job Description")
+
     elif not resume_files:
         st.warning("Please upload at least one resume")
+
     else:
+        with st.spinner("⚡ Processing resumes..."):
 
-        with st.spinner("Analyzing resumes..."):
-
+            # ✅ PREPROCESS JD
             jd_text_clean = preprocess(jd_text)
 
-            results = []
+            # ✅ EXTRACT & PREPROCESS ALL RESUMES FIRST
+            resume_texts = []
+            resume_names = []
+
             progress = st.progress(0)
 
             for i, resume in enumerate(resume_files):
+                try:
+                    if resume.name.endswith(".pdf"):
+                        text = extract_text_from_pdf(resume)
+                    else:
+                        text = extract_text_from_docx(resume)
 
-                if resume.name.endswith(".pdf"):
-                    resume_text = extract_text_from_pdf(resume)
-                else:
-                    resume_text = extract_text_from_docx(resume)
+                    clean_text = preprocess(text)
 
-                resume_text_clean = preprocess(resume_text)
+                    if len(clean_text.strip()) > 50:  # avoid empty/bad resumes
+                        resume_texts.append(clean_text)
+                        resume_names.append(resume.name)
 
-                # ✅ NEW DETAILED SCORING
-                details = compute_detailed_score(jd_text_clean, resume_text_clean)
-
-                results.append({
-                    "name": resume.name,
-                    **details
-                })
+                except Exception as e:
+                    st.warning(f"⚠️ Error reading {resume.name}, skipped.")
 
                 progress.progress((i + 1) / len(resume_files))
 
+            if not resume_texts:
+                st.error("❌ No valid resumes found.")
+                st.stop()
+
+            # ✅ BATCH EMBEDDINGS (FAST 🚀)
+            jd_emb = get_embeddings_batch([jd_text_clean])[0]
+            resume_embs = get_embeddings_batch(resume_texts)
+
             # -----------------------------------
-            # SORT RESULTS
+            # SCORING
             # -----------------------------------
+            results = []
+
+            for i in range(len(resume_texts)):
+
+                details = compute_detailed_score(
+                    jd_text_clean,
+                    resume_texts[i],
+                    jd_emb,
+                    resume_embs[i]
+                )
+
+                results.append({
+                    "name": resume_names[i],
+                    **details
+                })
+
+            # SORT
             results = sorted(results, key=lambda x: x["final_score"], reverse=True)
 
         # -----------------------------------
@@ -107,16 +135,28 @@ if st.button("🔍 Analyze Resumes"):
         for i, r in enumerate(results[:top_n]):
             st.markdown(f"### {i+1}. {r['name']}")
 
-            # ✅ Better explanation
+            # Scores
+            st.progress(r['final_score'])
+
             st.write(f"⭐ Final Score: {round(r['final_score']*100, 2)}%")
             st.write(f"🧠 Semantic Match: {round(r['semantic_score']*100, 2)}%")
             st.write(f"🛠 Skill Match: {round(r['skill_score']*100, 2)}%")
+            st.write(f"🔍 Semantic Skill Match: {round(r['semantic_skill_score']*100, 2)}%")
 
-            st.write(f"✅ Matched Skills: {', '.join(r['matched_skills']) if r['matched_skills'] else 'None'}")
-            st.write(f"❌ Missing Skills: {', '.join(r['missing_skills']) if r['missing_skills'] else 'None'}")
+            # Skills
+            st.write(
+                f"✅ Matched Skills: {', '.join(r['matched_skills']) if r['matched_skills'] else 'None'}"
+            )
+            st.write(
+                f"❌ Missing Skills: {', '.join(r['missing_skills']) if r['missing_skills'] else 'None'}"
+            )
 
             st.divider()
 
+        # -----------------------------------
+        # ALL RESULTS
+        # -----------------------------------
         st.subheader("📊 All Results")
+
         for r in results:
             st.write(f"{r['name']} → {round(r['final_score']*100, 2)}%")
