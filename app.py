@@ -133,6 +133,30 @@ hr {
 
 </style>
 """, unsafe_allow_html=True)
+st.markdown("""
+<style>
+
+/* Reduce only output text size */
+.stMarkdown, .stText, .stDataFrame, .stTable {
+    font-size: 13px !important;
+}
+
+/* Reduce metric numbers slightly */
+[data-testid="metric-container"] {
+    font-size: 14px !important;
+}
+
+/* Keep headings slightly bigger */
+h1, h2, h3 {
+    font-size: 18px !important;
+}
+
+h4 {
+    font-size: 15px !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # -------------------------------
 # HEADER
@@ -184,7 +208,7 @@ job_openings = st.number_input(
     "👥 Number of openings",
     min_value=1,
     max_value=50,
-    value=5
+    value=1
 )
 
 # -------------------------------
