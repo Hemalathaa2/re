@@ -1,7 +1,10 @@
 streamlit
-sentence-transformers
-scikit-learn
+fastapi
+uvicorn
 pdfplumber
 python-docx
 nltk
-openai
+sentence-transformers
+scikit-learn
+groq
+python-multipart
