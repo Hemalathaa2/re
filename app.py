@@ -231,7 +231,7 @@ if st.button("Analyze Candidates"):
                 jd_text,
                 texts[i],
                 results[i]
-            ))
+            )
 
     st.success("Analysis Complete")
 
