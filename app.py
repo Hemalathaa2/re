@@ -7,152 +7,97 @@ st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 # -------------------------------
 # UI STYLE (CLEAN + PROFESSIONAL)
 # -------------------------------
-
 st.markdown("""
 <style>
 
-/* ---------------- GLOBAL ---------------- */
+/* Background */
 body {
     background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
-    font-size: 13px;
 }
 
-/* Main spacing */
+/* Main container spacing */
 .block-container {
     padding-top: 2rem;
 }
 
-/* ---------------- HEADER ---------------- */
+/* Header */
 .main-title {
-    font-size: 36px;
-    font-weight: 800;
+    font-size: 48px;
+    font-weight: 900;
     text-align: center;
     background: linear-gradient(90deg, #4ade80, #22d3ee, #818cf8);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
+/* Subtitle */
 .subtitle {
     text-align: center;
     color: #94a3b8;
-    font-size: 14px;
-    margin-bottom: 20px;
+    font-size: 18px;
+    margin-bottom: 30px;
 }
 
-/* ---------------- TEXT ---------------- */
-h1, h2, h3, h4 {
-    font-size: 15px !important;
-}
-
-p, div, span {
-    font-size: 13px !important;
-}
-
-/* ---------------- CARD (GLASS UI) ---------------- */
+/* Glass Card */
 .card {
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 12px;
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-    margin-bottom: 10px;
-    transition: all 0.25s ease;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
 }
 
+/* Hover animation */
 .card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
 }
 
-/* ---------------- BUTTONS ---------------- */
+/* Buttons */
 .stButton > button {
     background: linear-gradient(90deg, #22d3ee, #4ade80);
     color: black;
-    font-weight: 600;
-    font-size: 13px;
-    border-radius: 10px;
-    padding: 8px 16px;
+    font-weight: bold;
+    border-radius: 12px;
+    padding: 10px 20px;
+    transition: 0.3s;
     border: none;
-    transition: 0.25s ease;
 }
 
 .stButton > button:hover {
-    transform: scale(1.04);
-    box-shadow: 0 0 10px rgba(34,211,238,0.5);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(34,211,238,0.6);
 }
 
-/* ---------------- INPUT FIELDS ---------------- */
+/* Input fields */
 div[data-baseweb="input"] input {
-    font-size: 13px !important;
-    padding: 8px !important;
-    border-radius: 10px !important;
+    font-size:18px !important;
+    padding:12px !important;
+    border-radius:12px !important;
     background: rgba(255,255,255,0.05) !important;
-    color: inherit !important;   /* ✅ theme adaptive */
+    color: white !important;
 }
 
-/* Placeholder */
-div[data-baseweb="input"] input::placeholder {
-    color: gray !important;
-}
-
-/* ---------------- TEXT AREA ---------------- */
-textarea {
-    font-size: 13px !important;
-    border-radius: 10px !important;
-    background: rgba(255,255,255,0.05) !important;
-    color: inherit !important;
-}
-
-/* ---------------- FILE UPLOADER ---------------- */
+/* File uploader */
 section[data-testid="stFileUploader"] {
     background: rgba(255,255,255,0.05);
-    padding: 12px;
-    border-radius: 12px;
+    padding: 15px;
+    border-radius: 15px;
     border: 1px dashed rgba(255,255,255,0.2);
 }
 
-/* ---------------- METRICS ---------------- */
-[data-testid="metric-container"] {
-    background: rgba(255,255,255,0.05);
-    padding: 10px;
-    border-radius: 10px;
-}
-
-/* ---------------- PROGRESS BAR ---------------- */
+/* Progress bar */
 div[data-testid="stProgress"] > div > div {
     background: linear-gradient(90deg, #22d3ee, #4ade80);
 }
 
-/* ---------------- DIVIDER ---------------- */
+/* Divider */
 hr {
     border: 1px solid rgba(255,255,255,0.1);
-}
-
-</style>
-""", unsafe_allow_html=True)
-st.markdown("""
-<style>
-
-/* Reduce only output text size */
-.stMarkdown, .stText, .stDataFrame, .stTable {
-    font-size: 13px !important;
-}
-
-/* Reduce metric numbers slightly */
-[data-testid="metric-container"] {
-    font-size: 14px !important;
-}
-
-/* Keep headings slightly bigger */
-h1, h2, h3 {
-    font-size: 18px !important;
-}
-
-h4 {
-    font-size: 15px !important;
 }
 
 </style>
