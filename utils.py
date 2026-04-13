@@ -101,22 +101,29 @@ def generate_explanation(jd, res, score):
     try:
         prompt = f"""
 Job Description:
-{jd[:500]}
+{jd[:400]}
 
-Resume:
-{res[:500]}
+Candidate Resume:
+{res[:400]}
 
-Score: {score['final_score']}
+Scores:
+- Final Score: {score['final_score']:.2f}
+- Semantic Match: {score['semantic_score']:.2f}
+- Skill Match: {score['skill_score']:.2f}
+- Experience Match: {score['experience_score']:.2f}
 
-Explain:
-- Matching skills
-- Missing skills
-- Final decision (Shortlist/Reject)
+Give a SHORT explanation in 3 bullet points:
+1. Key strengths
+2. Missing skills
+3. Final decision (Shortlist / Reject)
 """
+
         r = client.chat.completions.create(
             model="llama3-8b-8192",
-            messages=[{"role":"user","content":prompt}]
+            messages=[{"role": "user", "content": prompt}]
         )
+
         return r.choices[0].message.content
+
     except:
         return "Explanation unavailable"
