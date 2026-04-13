@@ -269,68 +269,73 @@ if st.button("Analyze Candidates"):
     # -------------------------------
     # SHORTLIST
     # -------------------------------
+# -------------------------------
+# SHORTLIST
+# -------------------------------
+    st.subheader("🎯 Shortlisted Candidates")
+    
     for i, r in enumerate(results[:job_openings]):
-
-    # Verdict
-    if r["final_score"] > 0.7:
-        verdict = "🟢 Strong Match (Highly Recommended)"
-    elif r["final_score"] > 0.4:
-        verdict = "🟡 Moderate Match (Can be Considered)"
-    else:
-        verdict = "🔴 Low Match (Not Recommended)"
-
-    # Card
-    st.markdown(f"""
-    <div class="card">
-    <b>#{i+1} {r['name']}</b><br>
-    Score: {r['final_score']*100:.2f}%
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.progress(float(r["final_score"]))
-
-    # Skills
-    matched = r["matched_skills"]
-    missing = r["missing_skills"]
-
-    st.markdown(f"""
-    **🔍 Skills Analysis**
-
-    - ✅ Matched Skills: {', '.join(matched) if matched else 'None found'}
-    - ❌ Missing Skills: {', '.join(missing) if missing else 'None'}
-    """)
-
-    # Keyword comparison
-    jd_keywords = list(extract_skills(jd_clean))
-    resume_keywords = list(extract_skills(texts[i]))
-
-    st.markdown(f"""
-    **🧾 Keyword Comparison**
-
-    - 📌 JD Keywords: {', '.join(jd_keywords) if jd_keywords else 'None'}
-    - 📄 Resume Keywords: {', '.join(resume_keywords) if resume_keywords else 'None'}
-    """)
-
-    # Scores
-    st.markdown(f"""
-    **📊 Score Breakdown**
-
-    - 📄 Resume Similarity: {r['semantic_score']*100:.2f}%
-    - 🧠 Skill Match: {r['skill_score']*100:.2f}%
-    - 📅 Experience Match: {r['experience_score']*100:.2f}%
-    """)
-
-    # Verdict
-    st.markdown(f"**📌 Verdict:** {verdict}")
-
-    # AI Explanation
-    with st.expander("🧠 AI Explanation"):
-        if r["llm_explanation"]:
-            st.write(r["llm_explanation"])
+    
+        # Verdict
+        if r["final_score"] > 0.7:
+            verdict = "🟢 Strong Match (Highly Recommended)"
+        elif r["final_score"] > 0.4:
+            verdict = "🟡 Moderate Match (Can be Considered)"
         else:
-            st.write("No explanation available")
-
-    st.divider()
+            verdict = "🔴 Low Match (Not Recommended)"
+    
+        # Card
+        st.markdown(f"""
+        <div class="card">
+        <b>#{i+1} {r['name']}</b><br>
+        Score: {r['final_score']*100:.2f}%
+        </div>
+        """, unsafe_allow_html=True)
+    
+        st.progress(float(r["final_score"]))
+    
+        # Skills
+        matched = r["matched_skills"]
+        missing = r["missing_skills"]
+    
+        st.markdown(f"""
+        **🔍 Skills Analysis**
+    
+        - ✅ Matched Skills: {', '.join(matched) if matched else 'None found'}
+        - ❌ Missing Skills: {', '.join(missing) if missing else 'None'}
+        """)
+    
+        # Keyword comparison
+        jd_keywords = list(extract_skills(jd_clean))
+        resume_keywords = list(extract_skills(texts[i]))
+    
+        st.markdown(f"""
+        **🧾 Keyword Comparison**
+    
+        - 📌 JD Keywords: {', '.join(jd_keywords) if jd_keywords else 'None'}
+        - 📄 Resume Keywords: {', '.join(resume_keywords) if resume_keywords else 'None'}
+        """)
+    
+        # Scores
+        st.markdown(f"""
+        **📊 Score Breakdown**
+    
+        - 📄 Resume Similarity: {r['semantic_score']*100:.2f}%
+        - 🧠 Skill Match: {r['skill_score']*100:.2f}%
+        - 📅 Experience Match: {r['experience_score']*100:.2f}%
+        """)
+    
+        # Verdict
+        st.markdown(f"**📌 Verdict:** {verdict}")
+    
+        # AI Explanation
+        with st.expander("🧠 AI Explanation"):
+            if r.get("llm_explanation"):
+                st.write(r["llm_explanation"])
+            else:
+                st.write("No explanation available")
+    
+        st.divider()
     # -------------------------------
     # COMPARISON TABLE
     # -------------------------------
