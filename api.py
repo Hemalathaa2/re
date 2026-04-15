@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form
 from typing import List
 from utils import *
 from database import init_db, insert_result
-
+from fastapi.middleware.cors import CORSMiddleware
 init_db()
 app = FastAPI()
 
@@ -43,3 +43,12 @@ async def analyze(files: List[UploadFile] = File(...), jd_text: str = Form(...))
         )
 
     return {"results": results}
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
