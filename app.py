@@ -5,78 +5,82 @@ from utils import *
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 
 # -------------------------------
-# MODERN UI STYLE (TEMPLATE MATCH)
+# PREMIUM ADAPTIVE UI
 # -------------------------------
 st.markdown("""
 <style>
 
 /* Global */
 body {
-    background-color: #0e1117;
-    color: #e6edf3;
     font-family: 'Inter', sans-serif;
 }
 
-/* Main container */
+/* Remove default top spacing */
 .block-container {
     padding-top: 1.5rem;
-    padding-bottom: 2rem;
 }
 
 /* Title */
 .title {
     font-size: 42px;
     font-weight: 800;
-    color: #ffffff;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+    color: inherit;
 }
 
 .subtitle {
     font-size: 16px;
-    color: #8b949e;
+    opacity: 0.7;
     margin-bottom: 25px;
 }
 
-/* Section card */
+/* Clean spacing instead of boxes */
 .section {
-    background-color: #161b22;
-    padding: 20px;
-    border-radius: 14px;
-    border: 1px solid #30363d;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
-/* Metrics */
-.metric-box {
-    background: #161b22;
-    padding: 15px;
-    border-radius: 12px;
-    text-align: center;
-    border: 1px solid #30363d;
-}
-
-/* Buttons */
+/* Buttons (Premium Green) */
 .stButton > button {
-    background-color: #238636;
-    color: white;
-    border-radius: 8px;
-    padding: 10px 18px;
+    background-color: #22c55e;
+    color: black;
     font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 18px;
+    border: none;
 }
 
 .stButton > button:hover {
-    background-color: #2ea043;
+    background-color: #16a34a;
 }
 
-/* Inputs */
+/* JD Upload area (same vibe as resume) */
+section[data-testid="stFileUploader"] {
+    border: 2px dashed #22c55e !important;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+/* Input fields AUTO adapt */
 textarea, input {
-    background-color: #0d1117 !important;
-    color: white !important;
+    color: inherit !important;
+    background-color: transparent !important;
+    border-radius: 10px !important;
 }
 
-/* Progress */
+/* Remove ugly black focus box */
+input:focus, textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Progress bar */
 div[data-testid="stProgress"] > div > div {
-    background-color: #2ea043;
+    background-color: #22c55e;
+}
+
+/* Divider */
+hr {
+    opacity: 0.2;
 }
 
 </style>
@@ -85,41 +89,43 @@ div[data-testid="stProgress"] > div > div {
 # -------------------------------
 # HEADER
 # -------------------------------
-st.markdown('<div class="title">AI Hiring Dashboard</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">🚀 AI Hiring Dashboard</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Smart Resume Screening using AI</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # JD INPUT
 # -------------------------------
-with st.container():
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown("### 📌 Job Description")
+st.markdown('<div class="section">', unsafe_allow_html=True)
+st.markdown("### 📌 Job Description")
 
-    jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
-    jd_text = ""
+jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
+jd_text = ""
 
-    if jd_option == "Paste Text":
-        jd_text = st.text_area("Paste Job Description", height=120)
-    else:
-        jd_file = st.file_uploader("Upload Job Description", type=["pdf","docx","txt"])
+if jd_option == "Paste Text":
+    jd_text = st.text_area(
+        "Paste Job Description",
+        height=120,
+        placeholder="Paste the job description here..."
+    )
+else:
+    jd_file = st.file_uploader("Upload Job Description", type=["pdf","docx","txt"])
 
-        if jd_file:
-            if jd_file.name.endswith(".pdf"):
-                jd_text = extract_text_from_pdf(jd_file)
-            elif jd_file.name.endswith(".docx"):
-                jd_text = extract_text_from_docx(jd_file)
-            else:
-                jd_text = jd_file.read().decode("utf-8")
+    if jd_file:
+        if jd_file.name.endswith(".pdf"):
+            jd_text = extract_text_from_pdf(jd_file)
+        elif jd_file.name.endswith(".docx"):
+            jd_text = extract_text_from_docx(jd_file)
+        else:
+            jd_text = jd_file.read().decode("utf-8")
 
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
-# RESUME + JOB OPENINGS
+# RESUME + OPENINGS (UNCHANGED)
 # -------------------------------
 col1, col2 = st.columns([2,1])
 
 with col1:
-    st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown("### 📂 Upload Resumes")
 
     resume_files = st.file_uploader(
@@ -127,10 +133,8 @@ with col1:
         type=["pdf","docx"],
         accept_multiple_files=True
     )
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<div class="section">', unsafe_allow_html=True)
     st.markdown("### 👥 Openings")
 
     job_openings = st.number_input(
@@ -139,17 +143,11 @@ with col2:
         max_value=50,
         value=1
     )
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------
 # ANALYSIS BUTTON
 # -------------------------------
-analyze = st.button("🚀 Analyze Candidates")
-
-# -------------------------------
-# ANALYSIS LOGIC (UNCHANGED)
-# -------------------------------
-if analyze:
+if st.button("🚀 Analyze Candidates"):
 
     if not jd_text or not resume_files:
         st.warning("Provide JD and resumes")
@@ -193,10 +191,8 @@ if analyze:
 
     st.success("Analysis Complete")
 
-    # -------------------------------
     # METRICS
-    # -------------------------------
-    c1, c2, c3 = st.columns(3)
+    c1,c2,c3 = st.columns(3)
 
     top_score = round(results[0]["final_score"]*100,2)
     avg_score = round(sum(r["final_score"] for r in results)/len(results)*100,2)
@@ -205,22 +201,18 @@ if analyze:
     c2.metric("Avg Score", f"{avg_score}%")
     c3.metric("Candidates", len(results))
 
-    # -------------------------------
     # BEST CANDIDATE
-    # -------------------------------
-    st.markdown("### 🏆 Best Candidate")
+    st.subheader("🏆 Best Candidate")
     top = results[0]
 
-    st.info(f"{top['name']} | Score: {round(top['final_score']*100,2)}%")
+    st.write(f"**{top['name']}** — {round(top['final_score']*100,2)}%")
     st.progress(float(top["final_score"]))
 
     if top.get("llm_explanation"):
-        st.success(top["llm_explanation"])
+        st.info(top["llm_explanation"])
 
-    # -------------------------------
     # SHORTLIST
-    # -------------------------------
-    st.markdown("### 🎯 Shortlisted Candidates")
+    st.subheader("🎯 Shortlisted Candidates")
 
     for i, r in enumerate(results[:job_openings]):
 
@@ -231,24 +223,21 @@ if analyze:
         else:
             verdict = "🔴 Low Match"
 
-        with st.container():
-            st.markdown(f"**#{i+1} {r['name']}**")
-            st.progress(float(r["final_score"]))
+        st.write(f"### #{i+1} {r['name']}")
+        st.progress(float(r["final_score"]))
 
-            st.write(f"Score: {r['final_score']*100:.2f}%")
-            st.write(f"Matched Skills: {', '.join(r['matched_skills'])}")
-            st.write(f"Missing Skills: {', '.join(r['missing_skills'])}")
-            st.write(f"Verdict: {verdict}")
+        st.write(f"Score: {r['final_score']*100:.2f}%")
+        st.write(f"Matched Skills: {', '.join(r['matched_skills']) or 'None'}")
+        st.write(f"Missing Skills: {', '.join(r['missing_skills']) or 'None'}")
+        st.write(f"Verdict: {verdict}")
 
-            with st.expander("AI Explanation"):
-                st.write(r.get("llm_explanation", "No explanation"))
+        with st.expander("🧠 AI Explanation"):
+            st.write(r.get("llm_explanation", "No explanation"))
 
-            st.divider()
+        st.divider()
 
-    # -------------------------------
     # TABLE
-    # -------------------------------
-    st.markdown("### 📋 Comparison Table")
+    st.subheader("📋 Comparison")
 
     df = pd.DataFrame(results)
 
@@ -261,10 +250,8 @@ if analyze:
 
     st.dataframe(df_display, use_container_width=True)
 
-    # -------------------------------
     # CHART
-    # -------------------------------
-    st.markdown("### 📊 Score Chart")
+    st.subheader("📊 Score Chart")
     st.bar_chart(df.set_index("name")["final_score"])
 
     st.download_button("Download CSV", df.to_csv(), "results.csv")
