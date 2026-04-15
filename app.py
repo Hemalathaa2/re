@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from utils import *
 import plotly.graph_objects as go
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
@@ -87,7 +86,7 @@ if page == "Dashboard":
     else:
         jd_file = st.file_uploader("Upload JD", type=["pdf","docx","txt"])
         if jd_file:
-            jd_text = extract_text_from_pdf(jd_file) if jd_file.name.endswith(".pdf") else extract_text_from_docx(jd_file)
+            jd_text = jd_file.read().decode("utf-8", errors="ignore")
 
     st.subheader("📂 Drag & Drop Resumes")
     resume_files = st.file_uploader(
