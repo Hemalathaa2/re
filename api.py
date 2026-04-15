@@ -30,6 +30,10 @@ async def analyze(files: List[UploadFile] = File(...), jd_text: str = Form(...))
         except:
             continue
 
+    # ✅ FIX: handle empty case
+    if not texts:
+        return {"results": []}
+
     jd_emb = get_embeddings_batch([jd_clean])[0]
     res_embs = get_embeddings_batch(texts)
 
@@ -48,5 +52,3 @@ async def analyze(files: List[UploadFile] = File(...), jd_text: str = Form(...))
         )
 
     return {"results": results}
-
-
