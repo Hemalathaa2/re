@@ -1,7 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from typing import List
 from utils import *
+from database import init_db, insert_result
 
+init_db()
 app = FastAPI()
 
 @app.post("/analyze/")
@@ -30,8 +32,9 @@ async def analyze(files: List[UploadFile] = File(...), jd_text: str = Form(...))
 
     for i in range(len(texts)):
         score = compute_detailed_score(jd_clean, texts[i], jd_emb, res_embs[i])
-        results.append({"name": names[i], **score})
-
+        result = {"name": names[i], **score}
+        insert_result(result)   # ✅ store in DB
+        results.append(result)
     results.sort(key=lambda x: x["final_score"], reverse=True)
 
     if results:
