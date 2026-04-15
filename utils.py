@@ -63,7 +63,21 @@ def extract_experience(text):
 # -------------------------------
 # EMBEDDING
 # -------------------------------
+# -------------------------------
+# EMBEDDING (FIXED - LAZY LOAD)
+# -------------------------------
+
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+    return model
+
 def get_embeddings_batch(text_list):
+    model = get_model()
     return model.encode(text_list, batch_size=16, show_progress_bar=False)
 
 # -------------------------------
