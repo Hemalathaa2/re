@@ -1,150 +1,162 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-from reportlab.platypus import SimpleDocTemplate, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
-import tempfile
-import requests
+from utils import *
 
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 
-# API URL
-API_URL = "https://re-m8x0.onrender.com/analyze/"
-
 # -------------------------------
-# CLEAN PRODUCTION UI
+# HEADER
 # -------------------------------
 st.markdown("""
-<style>
-
-/* System adaptive */
-html, body {
-    color: inherit !important;
-    background: inherit !important;
-}
-
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    border-right: 1px solid rgba(150,150,150,0.2);
-}
-
-/* Buttons */
-.stButton > button {
-    background-color: #22c55e;
-    color: white;
-    border-radius: 10px;
-    font-weight: 600;
-}
-
-/* Drag Upload */
-section[data-testid="stFileUploader"] {
-    border: 2px dashed #22c55e !important;
-    border-radius: 14px;
-    padding: 20px;
-}
-
-/* Cards */
-.card {
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(150,150,150,0.2);
-    margin-bottom: 12px;
-}
-
-/* Chips */
-.chip {
-    display: inline-block;
-    padding: 5px 10px;
-    margin: 3px;
-    border-radius: 20px;
-    font-size: 12px;
-}
-.match { background: rgba(34,197,94,0.2); }
-.miss { background: rgba(239,68,68,0.2); }
-
-</style>
+<h1 style='text-align:center;'>🚀 AI Hiring Dashboard</h1>
 """, unsafe_allow_html=True)
 
 # -------------------------------
-# SIDEBAR
+# JD INPUT
 # -------------------------------
-st.sidebar.title("AI Hiring System")
-page = st.sidebar.radio("Navigation", ["Dashboard", "Results"])
+st.markdown("### 📌 Job Description")
 
-# -------------------------------
-# DASHBOARD
-# -------------------------------
-if page == "Dashboard":
+jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
+jd_text = ""
 
-    st.title("🚀 AI Hiring Dashboard")
+if jd_option == "Paste Text":
+    jd_text = st.text_area("Paste Job Description", height=120)
+else:
+    jd_file = st.file_uploader("Upload Job Description", type=["pdf","docx","txt"])
 
-    jd_option = st.radio("Job Description Input", ["Paste", "Upload"])
-    jd_text = ""
-
-    if jd_option == "Paste":
-        jd_text = st.text_area("Paste JD")
-    else:
-        jd_file = st.file_uploader("Upload JD", type=["pdf","docx","txt"])
-        if jd_file:
-            jd_text = jd_file.read().decode("utf-8", errors="ignore")
-
-    st.subheader("📂 Drag & Drop Resumes")
-    resume_files = st.file_uploader(
-        "Drop resumes here",
-        type=["pdf","docx"],
-        accept_multiple_files=True
-    )
-
-    job_openings = st.number_input("Openings", 1, 50, 1)
-
-    if st.button("Analyze"):
-
-        if not jd_text or not resume_files:
-            st.warning("Provide JD and resumes")
-            st.stop()
-
-        with st.spinner("Analyzing via API..."):
-
-            try:
-                response = requests.post(
-                    API_URL,
-                    files=[("files", (f.name, f, f.type)) for f in resume_files],
-                    data={"jd_text": jd_text}
-                )
-
-                if response.status_code != 200:
-                    st.error("API Error")
-                    st.stop()
-
-                results = response.json()["results"]
-
-            except Exception as e:
-                st.error(f"Connection failed: {e}")
-                st.stop()
-
-        st.session_state["results"] = results
-        st.session_state["job_openings"] = job_openings
-
-        st.success("Analysis complete → Go to Results")
+    if jd_file:
+        if jd_file.name.endswith(".pdf"):
+            jd_text = extract_text_from_pdf(jd_file)
+        elif jd_file.name.endswith(".docx"):
+            jd_text = extract_text_from_docx(jd_file)
+        else:
+            jd_text = jd_file.read().decode("utf-8")
 
 # -------------------------------
-# RESULTS
+# RESUME UPLOAD
 # -------------------------------
-if page == "Results":
+st.markdown("### 📂 Upload Resumes")
 
-    if "results" not in st.session_state:
-        st.warning("Run analysis first")
+resume_files = st.file_uploader(
+    "Upload resumes",
+    type=["pdf","docx"],
+    accept_multiple_files=True
+)
+
+# -------------------------------
+# JOB OPENINGS
+# -------------------------------
+job_openings = st.number_input(
+    "👥 Number of openings",
+    min_value=1,
+    max_value=50,
+    value=5
+)
+
+# -------------------------------
+# ANALYSIS (NO API CALL — FIXED)
+# -------------------------------
+if st.button("Analyze Candidates"):
+
+    if not jd_text or not resume_files:
+        st.warning("Provide JD and resumes")
         st.stop()
 
-    results = st.session_state["results"]
-    job_openings = st.session_state["job_openings"]
+    with st.spinner("Processing..."):
+
+        jd_clean = preprocess(jd_text)
+
+        texts, names = [], []
+
+        for f in resume_files:
+            try:
+                if f.name.endswith(".pdf"):
+                    text = extract_text_from_pdf(f)
+                else:
+                    text = extract_text_from_docx(f)
+
+                clean = preprocess(text)
+
+                if len(clean) > 50:
+                    texts.append(clean)
+                    names.append(f.name)
+
+            except:
+                st.warning(f"Error reading {f.name}")
+
+        # embeddings
+        jd_emb = get_embeddings_batch([jd_clean])[0]
+        res_embs = get_embeddings_batch(texts)
+
+        results = []
+
+        for i in range(len(texts)):
+            score = compute_detailed_score(
+                jd_clean, texts[i], jd_emb, res_embs[i]
+            )
+
+            results.append({
+                "name": names[i],
+                **score
+            })
+
+        results.sort(key=lambda x: x["final_score"], reverse=True)
+
+        # ✅ Generate explanation for each candidate
+        for i in range(len(results)):
+            results[i]["llm_explanation"] = generate_explanation(
+                jd_text,
+                texts[i],
+                results[i]
+            )
+
+    st.success("Analysis Complete")
 
     # -------------------------------
-    # TOP CARDS
+    # METRICS
     # -------------------------------
-    st.subheader("🏆 Top Candidates")
+    top_score = round(results[0]["final_score"]*100,2)
+    avg_score = round(sum(r["final_score"] for r in results)/len(results)*100,2)
+
+    c1,c2,c3 = st.columns(3)
+    c1.metric("Top Score", f"{top_score:.2f}%")
+    c2.metric("Avg Score", f"{avg_score:.2f}%")
+    c3.metric("Candidates", len(results))
+
+    # -------------------------------
+    # BEST CANDIDATE
+    # -------------------------------
+    top = results[0]
+
+    st.subheader("Best Candidate")
+    st.markdown(f"""
+    <div class="card">
+    <b>{top['name']}</b><br>
+    Score: {top['final_score']*100:.2f}%
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.progress(float(top["final_score"]))
+
+    if top["llm_explanation"]:
+        st.write(top["llm_explanation"])
+    else:
+        st.write("No explanation available")
+
+    # -------------------------------
+    # SHORTLIST
+    # -------------------------------
+    st.subheader("Shortlisted Candidates")
 
     for i, r in enumerate(results[:job_openings]):
+
+        # Verdict
+        if r["final_score"] > 0.7:
+            verdict = "🟢 Strong Match"
+        elif r["final_score"] > 0.4:
+            verdict = "🟡 Moderate Match"
+        else:
+            verdict = "🔴 Low Match"
 
         st.markdown(f"""
         <div class="card">
@@ -153,81 +165,36 @@ if page == "Results":
         </div>
         """, unsafe_allow_html=True)
 
-        # Skill chips
-        chips = ""
-        for s in r["matched_skills"]:
-            chips += f'<span class="chip match">{s}</span>'
-        for s in r["missing_skills"]:
-            chips += f'<span class="chip miss">{s}</span>'
+        st.progress(float(r["final_score"]))
 
-        st.markdown(chips, unsafe_allow_html=True)
+        # Skills
+        st.write("Matched Skills:", ", ".join(r["matched_skills"]) or "None")
+        st.write("Missing Skills:", ", ".join(r["missing_skills"]) or "None")
 
-    # -------------------------------
-    # RADAR CHART
-    # -------------------------------
-    st.subheader("📊 Candidate Radar Comparison")
+        # Scores
+        st.write(f"Semantic: {r['semantic_score']*100:.2f}%")
+        st.write(f"Skill: {r['skill_score']*100:.2f}%")
+        st.write(f"Experience: {r['experience_score']*100:.2f}%")
 
-    selected = st.selectbox("Select Candidate", [r["name"] for r in results])
+        st.write("Verdict:", verdict)
 
-    r = next(x for x in results if x["name"] == selected)
+        # AI Explanation
+        with st.expander("AI Explanation"):
+            st.write(r["llm_explanation"] or "Not available")
 
-    fig = go.Figure()
-
-    fig.add_trace(go.Scatterpolar(
-        r=[
-            r["semantic_score"],
-            r["skill_score"],
-            r["experience_score"]
-        ],
-        theta=["Semantic", "Skills", "Experience"],
-        fill='toself'
-    ))
-
-    st.plotly_chart(fig, use_container_width=True)
-
-    # -------------------------------
-    # SIDE-BY-SIDE AI PANEL
-    # -------------------------------
-    st.subheader("🧠 AI Explanation Panel")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("### 🥇 Top Candidate")
-        st.write(results[0].get("llm_explanation", "No explanation"))
-
-    with col2:
-        st.markdown("### 🥈 Second Candidate")
-        if len(results) > 1:
-            st.write(results[1].get("llm_explanation", "No explanation"))
-
-    # -------------------------------
-    # PDF REPORT
-    # -------------------------------
-    st.subheader("📄 Download Report")
-
-    def generate_pdf(results):
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-        doc = SimpleDocTemplate(tmp.name)
-        styles = getSampleStyleSheet()
-
-        content = []
-        for r in results[:job_openings]:
-            content.append(Paragraph(f"{r['name']} - Score: {r['final_score']*100:.2f}%", styles["Normal"]))
-
-        doc.build(content)
-        return tmp.name
-
-    if st.button("Generate PDF"):
-        pdf_path = generate_pdf(results)
-
-        with open(pdf_path, "rb") as f:
-            st.download_button("Download PDF", f, "report.pdf")
+        st.divider()
 
     # -------------------------------
     # TABLE + CHART
     # -------------------------------
     df = pd.DataFrame(results)
 
-    st.dataframe(df, use_container_width=True)
+    st.subheader("Comparison Table")
+    st.dataframe(df)
+
+    st.subheader("Score Chart")
     st.bar_chart(df.set_index("name")["final_score"])
+
+    st.download_button("Download CSV", df.to_csv(), "results.csv")
+
+
