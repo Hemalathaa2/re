@@ -3,19 +3,28 @@ import docx
 import re
 import nltk
 import os
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 
+# ✅ FIX: safe nltk download
 try:
     nltk.data.find('corpora/stopwords')
 except:
-    nltk.download('stopwords')
+    nltk.download('stopwords', quiet=True)
 
 from nltk.corpus import stopwords
 stop_words = set(stopwords.words('english'))
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# ✅ FIX: LAZY LOAD MODEL (prevents Render crash)
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+    return model
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # -------------------------------
@@ -63,19 +72,6 @@ def extract_experience(text):
 # -------------------------------
 # EMBEDDING
 # -------------------------------
-# -------------------------------
-# EMBEDDING (FIXED - LAZY LOAD)
-# -------------------------------
-
-model = None
-
-def get_model():
-    global model
-    if model is None:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-    return model
-
 def get_embeddings_batch(text_list):
     model = get_model()
     return model.encode(text_list, batch_size=16, show_progress_bar=False)
