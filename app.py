@@ -1,8 +1,11 @@
 import streamlit as st
 import pandas as pd
-from utils import *
 import requests
+
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
+
+# 🔥 Replace with your actual deployed API URL
+API_URL = "https://re-m8x0.onrender.com/analyze/"
 
 # -------------------------------
 # HEADER
@@ -26,11 +29,11 @@ else:
 
     if jd_file:
         if jd_file.name.endswith(".pdf"):
-            jd_text = extract_text_from_pdf(jd_file)
+            jd_text = jd_file.read().decode("utf-8", errors="ignore")
         elif jd_file.name.endswith(".docx"):
-            jd_text = extract_text_from_docx(jd_file)
+            jd_text = jd_file.read().decode("utf-8", errors="ignore")
         else:
-            jd_text = jd_file.read().decode("utf-8")
+            jd_text = jd_file.read().decode("utf-8", errors="ignore")
 
 # -------------------------------
 # RESUME UPLOAD
@@ -54,7 +57,7 @@ job_openings = st.number_input(
 )
 
 # -------------------------------
-# ANALYSIS (NO API CALL — FIXED)
+# ANALYSIS (API BASED)
 # -------------------------------
 if st.button("Analyze Candidates"):
 
@@ -64,61 +67,39 @@ if st.button("Analyze Candidates"):
 
     with st.spinner("Processing..."):
 
-        jd_clean = preprocess(jd_text)
+        try:
+            files = [("files", (f.name, f, f.type)) for f in resume_files]
 
-        texts, names = [], []
-
-        for f in resume_files:
-            try:
-                if f.name.endswith(".pdf"):
-                    text = extract_text_from_pdf(f)
-                else:
-                    text = extract_text_from_docx(f)
-
-                clean = preprocess(text)
-
-                if len(clean) > 50:
-                    texts.append(clean)
-                    names.append(f.name)
-
-            except:
-                st.warning(f"Error reading {f.name}")
-
-        # embeddings
-        jd_emb = get_embeddings_batch([jd_clean])[0]
-        res_embs = get_embeddings_batch(texts)
-
-        results = []
-
-        for i in range(len(texts)):
-            score = compute_detailed_score(
-                jd_clean, texts[i], jd_emb, res_embs[i]
+            response = requests.post(
+                API_URL,
+                files=files,
+                data={"jd_text": jd_text},
+                timeout=120
             )
 
-            results.append({
-                "name": names[i],
-                **score
-            })
+            if response.status_code != 200:
+                st.error("API Error: Unable to process resumes")
+                st.stop()
 
-        results.sort(key=lambda x: x["final_score"], reverse=True)
+            results = response.json().get("results", [])
 
-        # ✅ Generate explanation for each candidate
-        for i in range(len(results)):
-            results[i]["llm_explanation"] = generate_explanation(
-                jd_text,
-                texts[i],
-                results[i]
-            )
+        except Exception as e:
+            st.error(f"Connection failed: {e}")
+            st.stop()
+
+    if not results:
+        st.warning("No valid resumes processed")
+        st.stop()
 
     st.success("Analysis Complete")
 
     # -------------------------------
     # METRICS
     # -------------------------------
-    top_score = round(results[0]["final_score"]*100,2)
-    avg_score = round(sum(r["final_score"] for r in results)/len(results)*100,2)
+    top_score = round(results[0]["final_score"]*100, 2)
+    avg_score = round(sum(r["final_score"] for r in results)/len(results)*100, 2)
 
-    c1,c2,c3 = st.columns(3)
+    c1, c2, c3 = st.columns(3)
     c1.metric("Top Score", f"{top_score:.2f}%")
     c2.metric("Avg Score", f"{avg_score:.2f}%")
     c3.metric("Candidates", len(results))
@@ -138,10 +119,7 @@ if st.button("Analyze Candidates"):
 
     st.progress(float(top["final_score"]))
 
-    if top["llm_explanation"]:
-        st.write(top["llm_explanation"])
-    else:
-        st.write("No explanation available")
+    st.write(top.get("llm_explanation", "No explanation available"))
 
     # -------------------------------
     # SHORTLIST
@@ -168,19 +146,19 @@ if st.button("Analyze Candidates"):
         st.progress(float(r["final_score"]))
 
         # Skills
-        st.write("Matched Skills:", ", ".join(r["matched_skills"]) or "None")
-        st.write("Missing Skills:", ", ".join(r["missing_skills"]) or "None")
+        st.write("Matched Skills:", ", ".join(r.get("matched_skills", [])) or "None")
+        st.write("Missing Skills:", ", ".join(r.get("missing_skills", [])) or "None")
 
         # Scores
         st.write(f"Semantic: {r['semantic_score']*100:.2f}%")
         st.write(f"Skill: {r['skill_score']*100:.2f}%")
-        st.write(f"Experience: {r['experience_score']*100:.2f}%")
+        st.write(f"Experience: {r.get('experience_score', 0)*100:.2f}%")
 
         st.write("Verdict:", verdict)
 
         # AI Explanation
         with st.expander("AI Explanation"):
-            st.write(r["llm_explanation"] or "Not available")
+            st.write(r.get("llm_explanation", "Not available"))
 
         st.divider()
 
@@ -190,11 +168,9 @@ if st.button("Analyze Candidates"):
     df = pd.DataFrame(results)
 
     st.subheader("Comparison Table")
-    st.dataframe(df)
+    st.dataframe(df, use_container_width=True)
 
     st.subheader("Score Chart")
     st.bar_chart(df.set_index("name")["final_score"])
 
-    st.download_button("Download CSV", df.to_csv(), "results.csv")
-
-
+    st.download_button("Download CSV", df.to_csv(index=False), "results.csv")
