@@ -10,7 +10,7 @@ import requests
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 
 # API URL
-API_URL = "http://localhost:8000/analyze/"
+API_URL = "https://re-m8x0.onrender.com/analyze/"
 
 # -------------------------------
 # CLEAN PRODUCTION UI
