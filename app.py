@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from utils import *
-
+import requests
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 
 # -------------------------------
