@@ -5,8 +5,12 @@ import plotly.graph_objects as go
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 import tempfile
+import requests
 
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
+
+# API URL
+API_URL = "http://localhost:8000/analyze/"
 
 # -------------------------------
 # CLEAN PRODUCTION UI
@@ -96,27 +100,28 @@ if page == "Dashboard":
 
     if st.button("Analyze"):
 
-        jd_clean = preprocess(jd_text)
+        if not jd_text or not resume_files:
+            st.warning("Provide JD and resumes")
+            st.stop()
 
-        texts, names = [], []
+        with st.spinner("Analyzing via API..."):
 
-        for f in resume_files:
-            text = extract_text_from_pdf(f) if f.name.endswith(".pdf") else extract_text_from_docx(f)
-            clean = preprocess(text)
-            texts.append(clean)
-            names.append(f.name)
+            try:
+                response = requests.post(
+                    API_URL,
+                    files=[("files", (f.name, f, f.type)) for f in resume_files],
+                    data={"jd_text": jd_text}
+                )
 
-        jd_emb = get_embeddings_batch([jd_clean])[0]
-        res_embs = get_embeddings_batch(texts)
+                if response.status_code != 200:
+                    st.error("API Error")
+                    st.stop()
 
-        results = []
+                results = response.json()["results"]
 
-        for i in range(len(texts)):
-            score = compute_detailed_score(jd_clean, texts[i], jd_emb, res_embs[i])
-            score["llm_explanation"] = generate_explanation(jd_text, texts[i], score)
-            results.append({"name": names[i], **score})
-
-        results.sort(key=lambda x: x["final_score"], reverse=True)
+            except Exception as e:
+                st.error(f"Connection failed: {e}")
+                st.stop()
 
         st.session_state["results"] = results
         st.session_state["job_openings"] = job_openings
@@ -190,12 +195,12 @@ if page == "Results":
 
     with col1:
         st.markdown("### 🥇 Top Candidate")
-        st.write(results[0]["llm_explanation"])
+        st.write(results[0].get("llm_explanation", "No explanation"))
 
     with col2:
         st.markdown("### 🥈 Second Candidate")
         if len(results) > 1:
-            st.write(results[1]["llm_explanation"])
+            st.write(results[1].get("llm_explanation", "No explanation"))
 
     # -------------------------------
     # PDF REPORT
@@ -227,4 +232,3 @@ if page == "Results":
 
     st.dataframe(df, use_container_width=True)
     st.bar_chart(df.set_index("name")["final_score"])
-
