@@ -6,46 +6,44 @@ st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
 
 # -------------------------------
 # PREMIUM ADAPTIVE UI
-# -------------------------------
+# ------------------------------
 st.markdown("""
 <style>
 
-/* Global */
-body {
-    font-family: 'Inter', sans-serif;
+/* Let system control theme */
+html, body, [class*="css"] {
+    color: inherit !important;
+    background: inherit !important;
 }
 
-/* Remove default top spacing */
-.block-container {
-    padding-top: 1.5rem;
+/* Remove heavy boxes */
+.section {
+    padding: 10px 0px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(150,150,150,0.15);
 }
 
 /* Title */
 .title {
     font-size: 42px;
     font-weight: 800;
-    margin-bottom: 4px;
-    color: inherit;
+    text-align: left;
 }
 
+/* Subtitle */
 .subtitle {
     font-size: 16px;
     opacity: 0.7;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
-/* Clean spacing instead of boxes */
-.section {
-    margin-bottom: 25px;
-}
-
-/* Buttons (Premium Green) */
+/* Buttons (premium green) */
 .stButton > button {
     background-color: #22c55e;
-    color: black;
-    font-weight: 600;
+    color: white;
     border-radius: 10px;
-    padding: 10px 18px;
+    padding: 10px 20px;
+    font-weight: 600;
     border: none;
 }
 
@@ -53,24 +51,28 @@ body {
     background-color: #16a34a;
 }
 
-/* JD Upload area (same vibe as resume) */
+/* JD Upload highlight (same as resume feel) */
 section[data-testid="stFileUploader"] {
     border: 2px dashed #22c55e !important;
     border-radius: 12px;
     padding: 15px;
+    background: transparent !important;
 }
 
-/* Input fields AUTO adapt */
-textarea, input {
+/* Inputs auto adapt (REMOVE black box issue) */
+div[data-baseweb="input"] input,
+textarea {
+    background: transparent !important;
     color: inherit !important;
-    background-color: transparent !important;
+    border: 1px solid rgba(150,150,150,0.3) !important;
     border-radius: 10px !important;
+    padding: 10px !important;
 }
 
-/* Remove ugly black focus box */
-input:focus, textarea:focus {
+/* Remove weird dark textarea fill */
+textarea:focus, input:focus {
     outline: none !important;
-    box-shadow: none !important;
+    box-shadow: 0 0 0 1px #22c55e !important;
 }
 
 /* Progress bar */
@@ -78,9 +80,10 @@ div[data-testid="stProgress"] > div > div {
     background-color: #22c55e;
 }
 
-/* Divider */
+/* Divider softer */
 hr {
-    opacity: 0.2;
+    border: none;
+    border-top: 1px solid rgba(150,150,150,0.2);
 }
 
 </style>
@@ -89,7 +92,7 @@ hr {
 # -------------------------------
 # HEADER
 # -------------------------------
-st.markdown('<div class="title">🚀 AI Hiring Dashboard</div>', unsafe_allow_html=True)
+st.markdown('<div class="title"> AI Hiring Dashboard</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Smart Resume Screening using AI</div>', unsafe_allow_html=True)
 
 # -------------------------------
