@@ -1,15 +1,21 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
 from typing import List
 from utils import *
+from database import init_db, insert_result, save_job, get_job
+import uuid
 
 app = FastAPI()
+
+init_db()
 
 @app.get("/")
 def home():
     return {"status": "API Running"}
 
-@app.post("/analyze/")
-async def analyze(files: List[UploadFile] = File(...), jd_text: str = Form(...)):
+# -------------------------------
+# BACKGROUND PROCESS
+# -------------------------------
+def process_resumes(job_id, files, jd_text):
 
     jd_clean = preprocess(jd_text)
 
@@ -30,9 +36,9 @@ async def analyze(files: List[UploadFile] = File(...), jd_text: str = Form(...))
         except:
             continue
 
-    # ✅ FIX: handle empty case
     if not texts:
-        return {"results": []}
+        save_job(job_id, [])
+        return
 
     jd_emb = get_embeddings_batch([jd_clean])[0]
     res_embs = get_embeddings_batch(texts)
@@ -41,14 +47,40 @@ async def analyze(files: List[UploadFile] = File(...), jd_text: str = Form(...))
 
     for i in range(len(texts)):
         score = compute_detailed_score(jd_clean, texts[i], jd_emb, res_embs[i])
-        results.append({"name": names[i], **score})
+        result = {"name": names[i], **score}
+        results.append(result)
+        insert_result(result)
 
     results.sort(key=lambda x: x["final_score"], reverse=True)
 
-    # AI explanation (top 3 only for speed)
-    for i in range(min(3, len(results))):
+    # LLM only top 2 (reduce time)
+    for i in range(min(2, len(results))):
         results[i]["llm_explanation"] = generate_explanation(
             jd_text, texts[i], results[i]
         )
 
-    return {"results": results}
+    save_job(job_id, results)
+
+# -------------------------------
+# START JOB
+# -------------------------------
+@app.post("/analyze/")
+async def analyze(
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+    jd_text: str = Form(...)
+):
+
+    job_id = str(uuid.uuid4())
+
+    background_tasks.add_task(process_resumes, job_id, files, jd_text)
+
+    return {"job_id": job_id}
+
+# -------------------------------
+# GET RESULT
+# -------------------------------
+@app.get("/result/{job_id}")
+def get_result(job_id: str):
+    result = get_job(job_id)
+    return {"results": result or []}
