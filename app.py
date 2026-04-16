@@ -1,85 +1,43 @@
 import streamlit as st
-import pandas as pd
 import requests
+import time
+import pandas as pd
+
+# -------------------------------
+# CONFIG
+# -------------------------------
+API_URL = "https://re-m8x0.onrender.com"
 
 st.set_page_config(page_title="AI Hiring Dashboard", layout="wide")
-
-# 🔥 Replace with your actual deployed API URL
-API_URL = "https://re-m8x0.onrender.com/analyze/"
 
 # -------------------------------
 # HEADER
 # -------------------------------
-st.markdown("""
-<h1 style='text-align:center;'>🚀 AI Hiring Dasimport streamlit as st
-import requests
-import time
-
-API_URL = "https://re-m8x0.onrender.com"
-
-st.title("AI Resume Analyzer")
-
-jd_text = st.text_area("Job Description")
-files = st.file_uploader("Upload Resumes", accept_multiple_files=True)
-
-if st.button("Analyze"):
-
-    with st.spinner("Submitting job..."):
-
-        response = requests.post(
-            f"{API_URL}/analyze/",
-            files=[("files", (f.name, f, f.type)) for f in files],
-            data={"jd_text": jd_text}
-        )
-
-        job_id = response.json()["job_id"]
-
-    st.info("Processing started...")
-
-    # 🔁 POLLING
-    for _ in range(30):
-        time.sleep(5)
-
-        res = requests.get(f"{API_URL}/result/{job_id}")
-        data = res.json()["results"]
-
-        if data:
-            st.success("Done!")
-            st.write(data)
-            break
-    else:
-        st.warning("Still processing, try again later.")hboard</h1>
-""", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;'>🚀 AI Hiring Dashboard</h1>", unsafe_allow_html=True)
 
 # -------------------------------
 # JD INPUT
 # -------------------------------
-st.markdown("### 📌 Job Description")
+st.subheader("📌 Job Description")
 
 jd_option = st.radio("Choose input method:", ["Paste Text", "Upload File"])
 jd_text = ""
 
 if jd_option == "Paste Text":
-    jd_text = st.text_area("Paste Job Description", height=120)
+    jd_text = st.text_area("Paste Job Description", height=150)
 else:
-    jd_file = st.file_uploader("Upload Job Description", type=["pdf","docx","txt"])
-
+    jd_file = st.file_uploader("Upload Job Description", type=["txt"])
     if jd_file:
-        if jd_file.name.endswith(".pdf"):
-            jd_text = jd_file.read().decode("utf-8", errors="ignore")
-        elif jd_file.name.endswith(".docx"):
-            jd_text = jd_file.read().decode("utf-8", errors="ignore")
-        else:
-            jd_text = jd_file.read().decode("utf-8", errors="ignore")
+        jd_text = jd_file.read().decode("utf-8", errors="ignore")
 
 # -------------------------------
 # RESUME UPLOAD
 # -------------------------------
-st.markdown("### 📂 Upload Resumes")
+st.subheader("📂 Upload Resumes")
 
-resume_files = st.file_uploader(
+files = st.file_uploader(
     "Upload resumes",
-    type=["pdf","docx"],
+    type=["pdf", "docx"],
     accept_multiple_files=True
 )
 
@@ -94,51 +52,62 @@ job_openings = st.number_input(
 )
 
 # -------------------------------
-# ANALYSIS (API BASED)
+# ANALYZE BUTTON
 # -------------------------------
-if st.button("Analyze Candidates"):
+if st.button("🚀 Analyze Candidates"):
 
-    if not jd_text or not resume_files:
-        st.warning("Provide JD and resumes")
+    if not jd_text or not files:
+        st.warning("Please provide JD and resumes")
         st.stop()
 
-    with st.spinner("Processing..."):
+    # STEP 1: Submit Job
+    with st.spinner("Submitting job..."):
+        response = requests.post(
+            f"{API_URL}/analyze/",
+            files=[("files", (f.name, f, f.type)) for f in files],
+            data={"jd_text": jd_text}
+        )
 
-        try:
-            files = [("files", (f.name, f, f.type)) for f in resume_files]
-
-            response = requests.post(
-                API_URL,
-                files=files,
-                data={"jd_text": jd_text},
-                timeout=120
-            )
-
-            if response.status_code != 200:
-                st.error("API Error: Unable to process resumes")
-                st.stop()
-
-            results = response.json().get("results", [])
-
-        except Exception as e:
-            st.error(f"Connection failed: {e}")
+        if response.status_code != 200:
+            st.error("Failed to start analysis")
             st.stop()
 
+        job_id = response.json()["job_id"]
+
+    st.info("⏳ Processing started... Please wait")
+
+    # STEP 2: Polling
+    results = None
+
+    progress_bar = st.progress(0)
+
+    for i in range(30):  # max ~150 sec
+        time.sleep(5)
+
+        res = requests.get(f"{API_URL}/result/{job_id}")
+        data = res.json().get("results", [])
+
+        progress_bar.progress((i + 1) / 30)
+
+        if data:
+            results = data
+            break
+
     if not results:
-        st.warning("No valid resumes processed")
+        st.warning("⚠️ Still processing. Try again later.")
         st.stop()
 
-    st.success("Analysis Complete")
+    st.success("✅ Analysis Complete!")
 
     # -------------------------------
     # METRICS
     # -------------------------------
-    top_score = round(results[0]["final_score"]*100, 2)
-    avg_score = round(sum(r["final_score"] for r in results)/len(results)*100, 2)
+    top_score = round(results[0]["final_score"] * 100, 2)
+    avg_score = round(sum(r["final_score"] for r in results) / len(results) * 100, 2)
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Top Score", f"{top_score:.2f}%")
-    c2.metric("Avg Score", f"{avg_score:.2f}%")
+    c1.metric("Top Score", f"{top_score}%")
+    c2.metric("Avg Score", f"{avg_score}%")
     c3.metric("Candidates", len(results))
 
     # -------------------------------
@@ -146,68 +115,40 @@ if st.button("Analyze Candidates"):
     # -------------------------------
     top = results[0]
 
-    st.subheader("Best Candidate")
-    st.markdown(f"""
-    <div class="card">
-    <b>{top['name']}</b><br>
-    Score: {top['final_score']*100:.2f}%
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.subheader("🏆 Best Candidate")
+    st.write(f"**{top['name']}**")
     st.progress(float(top["final_score"]))
-
-    st.write(top.get("llm_explanation", "No explanation available"))
+    st.write(top.get("llm_explanation", "No explanation"))
 
     # -------------------------------
     # SHORTLIST
     # -------------------------------
-    st.subheader("Shortlisted Candidates")
+    st.subheader("📋 Shortlisted Candidates")
 
     for i, r in enumerate(results[:job_openings]):
-
-        # Verdict
-        if r["final_score"] > 0.7:
-            verdict = "🟢 Strong Match"
-        elif r["final_score"] > 0.4:
-            verdict = "🟡 Moderate Match"
-        else:
-            verdict = "🔴 Low Match"
-
-        st.markdown(f"""
-        <div class="card">
-        <b>#{i+1} {r['name']}</b><br>
-        Score: {r['final_score']*100:.2f}%
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown(f"### #{i+1} {r['name']}")
         st.progress(float(r["final_score"]))
 
-        # Skills
         st.write("Matched Skills:", ", ".join(r.get("matched_skills", [])) or "None")
         st.write("Missing Skills:", ", ".join(r.get("missing_skills", [])) or "None")
 
-        # Scores
-        st.write(f"Semantic: {r['semantic_score']*100:.2f}%")
-        st.write(f"Skill: {r['skill_score']*100:.2f}%")
-        st.write(f"Experience: {r.get('experience_score', 0)*100:.2f}%")
+        st.write(f"Score: {r['final_score']*100:.2f}%")
 
-        st.write("Verdict:", verdict)
-
-        # AI Explanation
         with st.expander("AI Explanation"):
             st.write(r.get("llm_explanation", "Not available"))
 
         st.divider()
 
     # -------------------------------
-    # TABLE + CHART
+    # TABLE + DOWNLOAD
     # -------------------------------
     df = pd.DataFrame(results)
 
-    st.subheader("Comparison Table")
+    st.subheader("📊 Comparison Table")
     st.dataframe(df, use_container_width=True)
 
-    st.subheader("Score Chart")
-    st.bar_chart(df.set_index("name")["final_score"])
-
-    st.download_button("Download CSV", df.to_csv(index=False), "results.csv")
+    st.download_button(
+        "Download CSV",
+        df.to_csv(index=False),
+        "results.csv"
+    )
