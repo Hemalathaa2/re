@@ -11,7 +11,44 @@ API_URL = "https://re-m8x0.onrender.com/analyze/"
 # HEADER
 # -------------------------------
 st.markdown("""
-<h1 style='text-align:center;'>🚀 AI Hiring Dashboard</h1>
+<h1 style='text-align:center;'>🚀 AI Hiring Dasimport streamlit as st
+import requests
+import time
+
+API_URL = "https://re-m8x0.onrender.com"
+
+st.title("AI Resume Analyzer")
+
+jd_text = st.text_area("Job Description")
+files = st.file_uploader("Upload Resumes", accept_multiple_files=True)
+
+if st.button("Analyze"):
+
+    with st.spinner("Submitting job..."):
+
+        response = requests.post(
+            f"{API_URL}/analyze/",
+            files=[("files", (f.name, f, f.type)) for f in files],
+            data={"jd_text": jd_text}
+        )
+
+        job_id = response.json()["job_id"]
+
+    st.info("Processing started...")
+
+    # 🔁 POLLING
+    for _ in range(30):
+        time.sleep(5)
+
+        res = requests.get(f"{API_URL}/result/{job_id}")
+        data = res.json()["results"]
+
+        if data:
+            st.success("Done!")
+            st.write(data)
+            break
+    else:
+        st.warning("Still processing, try again later.")hboard</h1>
 """, unsafe_allow_html=True)
 
 # -------------------------------
