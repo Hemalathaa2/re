@@ -48,7 +48,7 @@ job_openings = st.number_input(
     "👥 Number of openings",
     min_value=1,
     max_value=50,
-    value=5
+    value=1
 )
 
 # -------------------------------
